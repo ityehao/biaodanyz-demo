@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>表单注册</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #F7F7F7;
+        }
+
+        ul {
+            margin: 0;
+            padding: 50px;
+            list-style: none;
+        }
+
+        .register {
+            width: 800px;
+            margin: 50px auto;
+            background-color: #FFF;
+            border: 1px solid #CCC;
+            border-radius: 5px;
+        }
+
+        li {
+            display: flex;
+            margin: 20px 0;
+        }
+
+        label, input {
+            display: block;
+            float: left;
+            height: 46px;
+            font-size: 24px;
+            box-sizing: border-box;
+            color: #333;
+        }
+
+        label {
+            width: 200px;
+            line-height: 46px;
+            margin-right: 30px;
+            text-align: right;
+        }
+
+        input {
+            width: 320px;
+            padding: 8px;
+            line-height: 1;
+            outline: none;
+            position: relative;
+        }
+
+        input.code {
+            width: 120px;
+        }
+
+        input.verify {
+            width: 190px;
+            margin-left: 10px;
+        }
+
+        input.disabled {
+            background-color: #CCC !important;
+        }
+
+        input[type=button] {
+            border: none;
+            color: #FFF;
+            border-radius: 4px;
+            background-color: #E64145;
+
+            cursor: pointer;
+        }
+
+        .tips {
+            position: fixed;
+            top: 0;
+            width: 100%;
+            height: 40px;
+            text-align: center;
+        }
+
+        .tips p {
+            min-width: 300px;
+            max-width: 400px;
+            line-height: 40px;
+            margin: 0 auto;
+            color: #FFF;
+            display: none;
+            background-color: #C91623;
+        }
+    </style>
+</head>
+<body>
+<div class="register">
+    <form id="ajaxForm">
+        <ul>
+            <li>
+                <label for="">用户名</label>
+                <input type="text" name="name" class="name">
+            </li>
+            <li>
+                <label for="">请设置密码</label>
+                <input type="password" name="pass" class="pass">
+            </li>
+            <li>
+                <label for="">请确认密码</label>
+                <input type="password" name="repass" class="repass">
+            </li>
+            <li>
+                <label for="">验证手机</label>
+                <input type="text" name="mobile" class="mobile">
+            </li>
+            <li>
+                <label for="">短信验证码</label>
+                <input type="text" name="code" class="code">
+                <input type="button" value="获取验证码" class="verify">
+            </li>
+            <li>
+                <label for=""></label>
+                <input type="button" class="submit" value="立即注册">
+            </li>
+        </ul>
+    </form>
+</div>
+<!-- 提示信息 -->
+<div class="tips">
+    <p>用户名不能为空</p>
+</div>
+<!-- 引入jQuery -->
+<script src="js/jquery.min.js"></script>
+<script>
+        /*
+        *  点击立即注册：
+        *     1：我要获取用户输入的数据。
+        *     2：获取到这些数据之后，我要进行一个简单的验证
+        *      防止ajax 重复提交，当用户点击一次之后，我们就把这个立即注册的按钮
+        *   禁用调用，当服务器的数据响应完成之后，我在把这个按钮给启用。
+        *     验证通过，
+        *           我数据发送给服务器
+        *     验证不通过
+        *           给用户一个提示。
+        * */
+
+         $(".submit").on("click",function(){
+                 //当用户点击，我判断一下，判断这个按钮是否可以点击。
+                 //我的按钮上面是否存在这样的一个disabled 的一个样式，如果有这样的一个样式
+                 //我就返回
+             //否则让用户往下注册
+             var _this=$(this);
+             if(_this.hasClass("disabled")){
+                 return; //结束这个方法我就使用return；
+                 //return false; 相当于给这个方法一个返回值。
+             }
+                 _this.addClass("disabled");
+                //当服务器响应完成，我应该这个按钮又激活，让用户可以注册。
+                //获取表单里面的数据。
+                //页面的表单想太多，我们一个一个表单项获取数据，这个工作非常繁琐
+                //jQuery 给我们提供了一个方法，可以帮我批量去获取表单里面的数据。
+                //serialize 序列化
+                 var data=$("#ajaxForm").serialize();
+                 $.ajax({
+                       type:"GET",
+                       url:"registerform.php",
+                       data:data,
+                       beforeSend:function(){
+                            //获取数据。
+                       },
+                       //服务器返回的 数据，通过这个参数去接受。
+                       success:function (info) {
+                          /*  alert(info);*/
+                       },
+                       complete:function(){
+                           _this.removeClass("disabled");
+                       }
+                 })
+         });
+        /*
+        *  获取验证码的功能。
+        *  1：我要给这个按钮添加要给点击事件
+        *  2：获取到手机号
+        *  3：你要把发送给服务器，发送给服务器的时候还要对这个手机号进行一个简单的校验
+        *      校验是两种情况，
+        *      一种成功
+        *           发送手机号给服务器，获取验证码的按钮不能点击了，里面的文本变成动态倒计时
+        *       倒计时完毕，变成可以获取。
+        *      一种失败
+        *      停止发送，给用户提示。
+        * */
+        $(".verify").on("click",function(){
+               var tel=$(".mobile").val();
+               //转成jQuery 对象。
+               var _this=$(this);
+                //添加点击事件。
+               /* var tel=$(".mobile").val();*/
+                //写一个正则，对这个手机号进行验证。
+                $.ajax({
+                     url:"07register.php",
+                     type:"post",
+                     data:{
+                         "telephone":tel
+                     },
+                     beforeSend:function(){
+                           if(th!=11){
+                                //停止，tel.leng不要发送请求。
+                               //给用户提示，然后停止return false；
+                                $(".tips>p").text("输入的手机号有误哦，亲")
+                                .fadeIn(1000)
+                                       .delay(1500)
+                                       .fadeOut(1000);
+                               return false;
+                           }
+
+                     },
+                     success:function(data){
+                           //我要让用户首先按钮必须变成不能点击，而且里面的内容动态变化。
+                           _this.addClass("disabled");
+                           var seconds=10;
+                          var ids=setInterval(function(){
+                               seconds--;
+                              _this.val(seconds+"秒之后获取");
+                               if(seconds<=0){
+                                   //结束循环
+                                   _this.removeClass("disabled");
+                                   _this.val("发送验证码");
+                                   clearInterval(ids);
+                               }
+                           },1000);
+                     }
+                })
+
+
+        });
+
+</script>
+</body>
+</html>
